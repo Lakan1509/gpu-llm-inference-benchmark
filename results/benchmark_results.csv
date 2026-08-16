@@ -1,0 +1,3 @@
+model,device,batch_size,max_new_tokens,latency_seconds,tokens_per_second,memory_before_mb,memory_after_mb
+distilgpt2,mps,1,50,2.7104,18.45,135.5,249.73
+distilgpt2,mps,2,100,3.6543,54.73,111.98,132.7

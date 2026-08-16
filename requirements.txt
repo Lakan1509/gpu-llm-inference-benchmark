@@ -1,0 +1,7 @@
+torch
+transformers
+accelerate
+psutil
+pandas
+numpy
+pytest
