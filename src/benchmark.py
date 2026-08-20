@@ -118,6 +118,12 @@ def main():
 
     args = parser.parse_args()
 
+    if args.tokens <= 0:
+        parser.error("--tokens must be greater than 0")
+
+    if args.batch_size <= 0:
+        parser.error("--batch-size must be greater than 0")
+
     result, outputs = run_benchmark(
         model_name=args.model,
         prompt=args.prompt,
