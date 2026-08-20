@@ -69,6 +69,7 @@ def run_benchmark(
     )
 
     result = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
         "model": model_name,
         "device": str(device),
         "batch_size": batch_size,
