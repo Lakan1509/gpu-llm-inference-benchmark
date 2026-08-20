@@ -48,7 +48,7 @@ def run_benchmark(
 
     memory_before = get_memory_mb()
 
-    outputs, latency = measure_latency(generate)
+    outputs, latency = measure_latency(generate, device=device)
 
     memory_after = get_memory_mb()
 
