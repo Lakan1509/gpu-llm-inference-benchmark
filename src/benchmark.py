@@ -137,6 +137,13 @@ def main():
     )
 
     parser.add_argument(
+        "--batch-sizes",
+        type=int,
+        nargs="+",
+        help="Run benchmarks for multiple batch sizes.",
+    )
+
+    parser.add_argument(
         "--iterations",
         type=int,
         default=1,
@@ -150,34 +157,42 @@ def main():
     if args.batch_size <= 0:
         parser.error("--batch-size must be greater than 0")
 
-    result, outputs = run_benchmark(
-        model_name=args.model,
-        prompt=args.prompt,
-        max_new_tokens=args.tokens,
-        batch_size=args.batch_size,
-        iterations=args.iterations,
-    )
+    if args.iterations <= 0:
+        parser.error("--iterations must be greater than 0")
 
-    print("\n=== Benchmark Results ===")
+    batch_sizes = args.batch_sizes if args.batch_sizes else [args.batch_size]
 
-    for key, value in result.items():
-        print(f"{key}: {value}")
-
-    print("\n=== Generated Text ===")
-    print(outputs[0])
+    if any(batch_size <= 0 for batch_size in batch_sizes):
+        parser.error("All batch sizes must be greater than 0")
 
     os.makedirs("results", exist_ok=True)
-
     output_path = "results/benchmark_results.csv"
 
-    df = pd.DataFrame([result])
+    for batch_size in batch_sizes:
+        result, outputs = run_benchmark(
+            model_name=args.model,
+            prompt=args.prompt,
+            max_new_tokens=args.tokens,
+            batch_size=batch_size,
+            iterations=args.iterations,
+        )
 
-    df.to_csv(
-        output_path,
-        mode="a",
-        index=False,
-        header=not os.path.exists(output_path),
-    )
+        print("\n=== Benchmark Results ===")
+
+        for key, value in result.items():
+            print(f"{key}: {value}")
+
+        print("\n=== Generated Text ===")
+        print(outputs[0])
+
+        df = pd.DataFrame([result])
+
+        df.to_csv(
+            output_path,
+            mode="a",
+            index=False,
+            header=not os.path.exists(output_path),
+        )
 
     print(f"\nResults saved to {output_path}")
 
