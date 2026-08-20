@@ -51,17 +51,29 @@ def run_benchmark(
     generate()
 
     memory_before = get_memory_mb()
+    latencies = []
 
-    outputs, latency = measure_latency(generate, device=device)
+    for _ in range(iterations):
+        outputs, latency = measure_latency(generate, device=device)
+        latencies.append(latency)
 
     memory_after = get_memory_mb()
 
     generated_tokens_per_sample = outputs.shape[1] - prompt_length_tokens
     total_generated_tokens = generated_tokens_per_sample * batch_size
 
+    mean_latency = sum(latencies) / len(latencies)
+    sorted_latencies = sorted(latencies)
+
+    p50_index = int(0.50 * (len(sorted_latencies) - 1))
+    p95_index = int(0.95 * (len(sorted_latencies) - 1))
+
+    p50_latency = sorted_latencies[p50_index]
+    p95_latency = sorted_latencies[p95_index]
+
     throughput = (
-        total_generated_tokens / latency
-        if latency > 0
+        total_generated_tokens / mean_latency
+        if mean_latency > 0
         else 0.0
     )
 
@@ -81,7 +93,9 @@ def run_benchmark(
         "prompt_length_tokens": prompt_length_tokens,
         "max_new_tokens": max_new_tokens,
         "total_generated_tokens": total_generated_tokens,
-        "latency_seconds": round(latency, 4),
+        "latency_seconds": round(mean_latency, 4),
+        "p50_latency_seconds": round(p50_latency, 4),
+        "p95_latency_seconds": round(p95_latency, 4),
         "tokens_per_second": round(throughput, 2),
         "memory_before_mb": round(memory_before, 2),
         "memory_after_mb": round(memory_after, 2),
