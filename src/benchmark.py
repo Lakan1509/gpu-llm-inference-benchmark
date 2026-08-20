@@ -1,6 +1,4 @@
 import argparse
-import os
-
 import pandas as pd
 import torch
 
@@ -42,7 +40,9 @@ def run_benchmark(
     memory_after = get_memory_mb()
 
     generated_tokens = outputs.shape[1] - inputs["input_ids"].shape[1]
+
     total_generated_tokens = generated_tokens * batch_size
+
     throughput = total_generated_tokens / latency
 
     decoded = tokenizer.batch_decode(
@@ -69,13 +69,27 @@ def main():
         description="Benchmark LLM inference performance."
     )
 
-    parser.add_argument("--model", default="distilgpt2")
+    parser.add_argument(
+        "--model",
+        default="distilgpt2",
+    )
+
     parser.add_argument(
         "--prompt",
         default="Artificial intelligence is transforming",
     )
-    parser.add_argument("--tokens", type=int, default=50)
-    parser.add_argument("--batch-size", type=int, default=1)
+
+    parser.add_argument(
+        "--tokens",
+        type=int,
+        default=50,
+    )
+
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1,
+    )
 
     args = parser.parse_args()
 
@@ -94,16 +108,15 @@ def main():
     print("\n=== Generated Text ===")
     print(outputs[0])
 
-    os.makedirs("results", exist_ok=True)
-    output_path = "results/benchmark_results.csv"
-
     df = pd.DataFrame([result])
+
+    output_path = "results/benchmark_results.csv"
 
     df.to_csv(
         output_path,
         mode="a",
         index=False,
-        header=not os.path.exists(output_path),
+        header=not pd.io.common.file_exists(output_path),
     )
 
     print(f"\nResults saved to {output_path}")
