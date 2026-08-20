@@ -14,6 +14,7 @@ def run_benchmark(
     prompt="Artificial intelligence is transforming",
     max_new_tokens=50,
     batch_size=1,
+    iterations=1,
 ):
     if max_new_tokens <= 0:
         raise ValueError("max_new_tokens must be greater than 0")
@@ -21,6 +22,8 @@ def run_benchmark(
     if batch_size <= 0:
         raise ValueError("batch_size must be greater than 0")
 
+    if iterations <= 0:
+        raise ValueError("iterations must be greater than 0")
     model, tokenizer, device = load_model(model_name)
 
     prompts = [prompt] * batch_size
@@ -74,6 +77,7 @@ def run_benchmark(
         "model": model_name,
         "device": str(device),
         "batch_size": batch_size,
+        "iterations": iterations,
         "prompt_length_tokens": prompt_length_tokens,
         "max_new_tokens": max_new_tokens,
         "total_generated_tokens": total_generated_tokens,
@@ -118,6 +122,12 @@ def main():
         help="Number of prompts processed per inference call.",
     )
 
+    parser.add_argument(
+        "--iterations",
+        type=int,
+        default=1,
+        help="Number of measured inference iterations.",
+    )
     args = parser.parse_args()
 
     if args.tokens <= 0:
@@ -131,6 +141,7 @@ def main():
         prompt=args.prompt,
         max_new_tokens=args.tokens,
         batch_size=args.batch_size,
+        iterations=args.iterations,
     )
 
     print("\n=== Benchmark Results ===")
