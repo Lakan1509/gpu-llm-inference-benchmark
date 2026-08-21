@@ -1,6 +1,13 @@
 import pandas as pd
 
 
+def _format_seconds(value):
+    if value is None or pd.isna(value):
+        return "n/a"
+
+    return f"{value:.4f}s"
+
+
 def generate_report(input_path="results/benchmark_results.csv"):
     df = pd.read_csv(input_path)
 
@@ -22,13 +29,31 @@ def generate_report(input_path="results/benchmark_results.csv"):
         "p95_latency_seconds",
         "tokens_per_second",
         "memory_delta_mb",
+        "device_peak_memory_mb",
+        "dtype",
+        "seed",
+        "stopped_early",
+        "status",
     ]
 
     available_columns = [column for column in columns if column in df.columns]
 
     report = df[available_columns].copy()
 
-    report = report.sort_values(
+    if "status" in report.columns:
+        successful = report[
+            report["status"].isna() | (report["status"] == "ok")
+        ].copy()
+    else:
+        successful = report.copy()
+
+    if successful.empty or "tokens_per_second" not in successful.columns:
+        print("\n=== LLM Inference Benchmark Report ===\n")
+        print(report.to_string(index=False))
+        print("\nNo successful benchmark rows to summarize.")
+        return
+
+    successful = successful.sort_values(
         by=["batch_size", "tokens_per_second"],
         ascending=[True, False],
     )
@@ -39,8 +64,8 @@ def generate_report(input_path="results/benchmark_results.csv"):
     print("\n=== Best Throughput by Batch Size ===\n")
 
     best = (
-        report.loc[
-            report.groupby("batch_size")["tokens_per_second"].idxmax()
+        successful.loc[
+            successful.groupby("batch_size")["tokens_per_second"].idxmax()
         ]
         .sort_values("batch_size")
     )
@@ -49,20 +74,20 @@ def generate_report(input_path="results/benchmark_results.csv"):
         print(
             f"Batch {int(row['batch_size'])}: "
             f"{row['tokens_per_second']:.2f} tokens/sec "
-            f"(mean: {row['latency_seconds']:.4f}s, "
-            f"p50: {row['p50_latency_seconds']:.4f}s, "
-            f"p95: {row['p95_latency_seconds']:.4f}s)"
+            f"(mean: {_format_seconds(row['latency_seconds'])}, "
+            f"p50: {_format_seconds(row.get('p50_latency_seconds'))}, "
+            f"p95: {_format_seconds(row.get('p95_latency_seconds'))})"
         )
 
-    best_throughput_row = report.loc[
-        report["tokens_per_second"].idxmax()
+    best_throughput_row = successful.loc[
+        successful["tokens_per_second"].idxmax()
     ]
 
-    best_latency_row = report.loc[
-        report["latency_seconds"].idxmin()
+    best_latency_row = successful.loc[
+        successful["latency_seconds"].idxmin()
     ]
 
-    batch_1 = report[report["batch_size"] == 1]
+    batch_1 = successful[successful["batch_size"] == 1]
 
     print("\n=== Performance Summary ===\n")
 
