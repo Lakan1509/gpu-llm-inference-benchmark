@@ -160,3 +160,71 @@ RUN_INTEGRATION=1 .venv/bin/pytest -v -m integration
 - `cudnn.deterministic` is not enabled (it can slow CUDA).
 - Engines such as vLLM / TensorRT-LLM are not integrated yet.
 - Appending to an existing `results/benchmark_results.csv` with a different column set is rejected; move or delete the old file first.
+
+---
+
+## Measured Results — Apple Silicon MPS
+
+A reproducible benchmark run was performed on Apple Silicon using PyTorch MPS with DistilGPT2.
+
+### Benchmark configuration
+
+| Configuration | Value |
+|---|---|
+| Model | `distilgpt2` |
+| Device | Apple Silicon MPS |
+| Precision | `float32` |
+| PyTorch | `2.13.0` |
+| Transformers | `5.15.0` |
+| Seed | `42` |
+| Max new tokens | `20` |
+| Measured iterations | `5` |
+| Batch sizes | `1, 2, 4, 8` |
+
+### Performance results
+
+| Batch Size | Mean Latency | p50 Latency | p95 Latency | Throughput |
+|---:|---:|---:|---:|---:|
+| 1 | 0.3855 s | 0.3922 s | 0.4103 s | 51.88 tokens/s |
+| 2 | 0.3163 s | 0.3122 s | 0.3406 s | 126.47 tokens/s |
+| 4 | 0.2742 s | 0.2741 s | 0.2855 s | 291.81 tokens/s |
+| 8 | 0.2645 s | 0.2625 s | 0.2731 s | **604.88 tokens/s** |
+
+Batch size 8 achieved the highest measured throughput at **604.88 tokens/sec**, compared with **51.88 tokens/sec** at batch size 1. This represents an **11.66x throughput increase** across the tested batch-size range.
+
+Mean generation latency decreased from **0.3855 seconds** at batch size 1 to **0.2645 seconds** at batch size 8.
+
+### Throughput scaling
+
+![Throughput vs Batch Size](results/charts/throughput_vs_batch_size.png)
+
+### Latency scaling
+
+![Latency vs Batch Size](results/charts/latency_vs_batch_size.png)
+
+> These measurements represent this specific local Apple Silicon MPS environment and benchmark configuration. They should not be interpreted as CUDA, data-center GPU, or production-serving performance.
+
+### Reproduce this benchmark
+
+```bash
+.venv/bin/python -m src.benchmark \
+  --model distilgpt2 \
+  --tokens 20 \
+  --batch-sizes 1 2 4 8 \
+  --iterations 5 \
+  --device mps \
+  --seed 42
+```
+
+Generate the report:
+
+```bash
+.venv/bin/python -m src.report
+```
+
+Generate the benchmark charts:
+
+```bash
+.venv/bin/python -m src.visualize
+```
+
